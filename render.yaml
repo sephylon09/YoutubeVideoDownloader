@@ -1,0 +1,21 @@
+# Render Blueprint (https://render.com/docs/blueprint-spec).
+# In the Render dashboard: New > Blueprint > pick this repository. Render asks for MD_PASSWORD;
+# MD_SECRET_KEY is generated automatically. Everything else uses the defaults in the Dockerfile.
+services:
+  - type: web
+    name: media-downloader
+    runtime: docker
+    # "free" sleeps after 15 idle minutes (losing in-progress jobs and files) and has very little CPU.
+    # A paid instance is recommended for real use; change the instance type in the dashboard.
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    # Jobs, sessions and rate limits are kept in memory: always run exactly one instance.
+    numInstances: 1
+    envVars:
+      - key: MD_PASSWORD
+        sync: false
+      - key: MD_SECRET_KEY
+        generateValue: true

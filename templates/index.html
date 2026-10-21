@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#0a0b10">
+  <meta name="description" content="Download your videos and audio in your preferred quality.">
+  <title>{{ app_name }}</title>
+  <link rel="icon" href="/static/img/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="/static/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/static/css/style.css?v={{ asset_version }}">
+  <script src="/static/js/theme-init.js?v={{ asset_version }}"></script>
+  <script src="/static/js/app.js?v={{ asset_version }}" defer></script>
+</head>
+<body data-mode="{{ 'public' if public else 'local' }}">
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/" aria-label="{{ app_name }} home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="32" height="32"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b6cff"/><stop offset="1" stop-color="#3fa2ff"/></linearGradient></defs><rect width="32" height="32" rx="9" fill="url(#bm)"/><path d="M16 8v11m0 0-4.5-4.5M16 19l4.5-4.5M10 23.5h12" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-name">{{ app_name }}</span>
+          <span class="brand-tagline">Download your videos and audio in your preferred quality</span>
+        </span>
+      </a>
+      <div class="header-actions">
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Switch to light theme" title="Toggle theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1Z"/></svg>
+        </button>
+        {% if auth_enabled %}
+        <form method="post" action="/logout" class="logout-form">
+          <button type="submit" class="icon-btn" aria-label="Sign out" title="Sign out">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h3.5A2 2 0 0 1 19.5 6.5v11a2 2 0 0 1-2 2H14"/><path d="M10 16.5 5.5 12 10 7.5M5.5 12H15"/></svg>
+          </button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="container main">
+    <div id="healthBanner" class="banner" role="status" hidden></div>
+
+    <section class="card hero-card" aria-label="Video link">
+      <form id="analyzeForm" class="url-form" novalidate autocomplete="off">
+        <label for="urlInput" class="visually-hidden">YouTube video link</label>
+        <div class="url-field" id="urlField">
+          <svg class="url-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>
+          <input id="urlInput" name="url" type="url" inputmode="url" placeholder="Paste a YouTube link…"
+                 spellcheck="false" autocapitalize="off" autocomplete="off" aria-describedby="urlHint" maxlength="2048">
+          <div class="url-tools">
+            <button type="button" id="clearBtn" class="ghost-btn ghost-btn-icon" aria-label="Clear link" title="Clear" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+            <button type="button" id="pasteBtn" class="ghost-btn" title="Paste from clipboard">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="4" width="10" height="4" rx="1.4"/><path d="M8.5 6H6.8A1.8 1.8 0 0 0 5 7.8v11.4A1.8 1.8 0 0 0 6.8 21h10.4a1.8 1.8 0 0 0 1.8-1.8V7.8A1.8 1.8 0 0 0 17.2 6h-1.7"/></svg>
+              <span>Paste</span>
+            </button>
+          </div>
+        </div>
+        <button type="submit" id="analyzeBtn" class="btn btn-primary btn-lg" disabled>
+          <span class="spinner" aria-hidden="true"></span>
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+          <span class="btn-label">Analyze Video</span>
+        </button>
+      </form>
+      <p id="urlHint" class="field-hint">Works with youtube.com, youtu.be and Shorts links.</p>
+    </section>
+
+    <section id="results" class="results" aria-live="polite" aria-busy="false">
+      <div id="emptyState" class="empty-state">
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 48 48"><rect x="5" y="10" width="38" height="28" rx="8"/><path d="m21 19 9 5-9 5z"/></svg>
+        </div>
+        <h2>Ready when you are</h2>
+        <p>Paste a video link above to see every available quality.</p>
+        <ul class="feature-chips" aria-label="Features">
+          <li>Up to 8K video</li>
+          <li>MP4 &amp; MP3</li>
+          {% if public %}<li>Private · no ads</li>{% else %}<li>Runs locally · no ads</li>{% endif %}
+        </ul>
+      </div>
+
+      <div id="skeleton" class="skeleton-wrap" hidden aria-hidden="true">
+        <div class="card video-card">
+          <div class="video-thumb sk"></div>
+          <div class="video-info">
+            <div class="sk sk-line sk-title"></div>
+            <div class="sk sk-line sk-title short"></div>
+            <div class="sk sk-line sk-sub"></div>
+            <div class="sk-row"><span class="sk sk-pill"></span><span class="sk sk-pill"></span><span class="sk sk-pill"></span></div>
+          </div>
+        </div>
+        <div class="card options-card">
+          <div class="sk sk-line sk-sub"></div>
+          <div class="sk-grid"><span class="sk sk-tile"></span><span class="sk sk-tile"></span><span class="sk sk-tile"></span><span class="sk sk-tile"></span></div>
+        </div>
+        <p class="skeleton-caption"><span class="spinner spinner-inline" aria-hidden="true"></span> Retrieving video information…</p>
+      </div>
+
+      <div id="analyzeError" class="card error-card" role="alert" hidden>
+        <div class="error-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><path d="M12 7.5v5.2M12 16.3v.2"/></svg>
+        </div>
+        <div class="error-body">
+          <h2 class="error-title" id="analyzeErrorTitle">Something went wrong</h2>
+          <p class="error-message" id="analyzeErrorMessage"></p>
+          <details class="error-details" id="analyzeErrorDetails" hidden>
+            <summary>Technical details</summary>
+            <code id="analyzeErrorDetail"></code>
+          </details>
+        </div>
+        <button type="button" class="btn btn-secondary" id="retryAnalyzeBtn">Try again</button>
+      </div>
+
+      <article id="videoCard" class="card video-card reveal" hidden>
+        <div class="video-thumb">
+          <img id="thumb" alt="" decoding="async" referrerpolicy="no-referrer">
+          <span class="thumb-badge" id="durationBadge"></span>
+          <span class="thumb-badge thumb-badge-left" id="shortBadge" hidden>Short</span>
+        </div>
+        <div class="video-info">
+          <h2 id="videoTitle" class="video-title"></h2>
+          <p class="video-channel">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5c1.3-3.4 4-5 7-5s5.7 1.6 7 5"/></svg>
+            <span id="videoChannel"></span>
+          </p>
+          <ul class="meta-list" id="videoMeta"></ul>
+          <div class="resolution-strip" id="resolutionStrip" aria-label="Available video resolutions"></div>
+        </div>
+      </article>
+
+      <section id="optionsCard" class="card options-card reveal" hidden aria-labelledby="optionsTitle">
+        <div class="options-header">
+          <div>
+            <h3 id="optionsTitle" class="section-title">Choose format &amp; quality</h3>
+            <p class="section-sub" id="optionsSub">Pick a format, then the quality you want.</p>
+          </div>
+          <div class="segmented" role="tablist" aria-label="Output format" id="formatTabs">
+            <span class="segmented-indicator" aria-hidden="true"></span>
+            <button type="button" role="tab" id="tab-mp4" class="segment" data-format="mp4" aria-selected="true" aria-controls="panel-mp4">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10.5 5-3v9l-5-3"/></svg>
+              <span><strong>MP4</strong> <small>Video</small></span>
+            </button>
+            <button type="button" role="tab" id="tab-mp3" class="segment" data-format="mp3" aria-selected="false" aria-controls="panel-mp3" tabindex="-1">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></svg>
+              <span><strong>MP3</strong> <small>Audio</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div id="notices" class="notices"></div>
+
+        <div id="panel-mp4" class="format-panel" role="tabpanel" aria-labelledby="tab-mp4">
+          <div class="quality-grid" id="mp4Grid" role="radiogroup" aria-label="Video quality"></div>
+          <div class="convert-row" id="convertRow" hidden>
+            <button type="button" class="switch" role="switch" id="convertToggle" aria-checked="false" aria-labelledby="convertLabel" aria-describedby="convertDesc">
+              <span class="switch-thumb"></span>
+            </button>
+            <div class="convert-text">
+              <span id="convertLabel" class="convert-label">Convert video to H.264</span>
+              <span id="convertDesc" class="convert-desc">For older TVs, phones and video editors. VP9/AV1 video is re-encoded, which takes much longer than a normal download.</span>
+            </div>
+          </div>
+          <p class="panel-note" id="mp4Note"></p>
+        </div>
+
+        <div id="panel-mp3" class="format-panel" role="tabpanel" aria-labelledby="tab-mp3" hidden>
+          <div class="source-info" id="mp3Source"></div>
+          <div class="quality-grid quality-grid-audio" id="mp3Grid" role="radiogroup" aria-label="MP3 quality"></div>
+          <p class="panel-note">YouTube doesn't offer MP3 files, so the audio is converted from the best source stream. A higher MP3 bitrate keeps more of the original, but can't make it better than the source.</p>
+        </div>
+
+        <div class="download-bar">
+          <div class="download-summary" id="downloadSummary" aria-live="polite"></div>
+          <button type="button" id="downloadBtn" class="btn btn-primary btn-lg" disabled>
+            <span class="spinner" aria-hidden="true"></span>
+            <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
+            <span class="btn-label">Download</span>
+          </button>
+        </div>
+      </section>
+    </section>
+
+    <section id="jobsSection" class="jobs-section" aria-labelledby="jobsTitle" hidden>
+      <div class="section-heading">
+        <h3 id="jobsTitle" class="section-title">Downloads</h3>
+        <button type="button" id="clearFinishedBtn" class="link-btn" hidden>Clear finished</button>
+      </div>
+      <ul id="jobsList" class="jobs-list"></ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      {% if public %}
+      <p>Finished files are kept on the server for up to {{ retention }}, and are deleted earlier if the server restarts. Save them with “Download File”. Only download videos you own or have permission to download.</p>
+      {% else %}
+      <p>Runs entirely on your computer. Only download videos you own or have permission to download.</p>
+      {% endif %}
+      <p class="footer-meta" id="footerMeta">v{{ version }}</p>
+    </div>
+  </footer>
+
+  <div class="toast-region" id="toasts" role="region" aria-label="Notifications" aria-live="polite"></div>
+
+  <template id="jobTemplate">
+    <li class="job-card">
+      <div class="job-thumb">
+        <img alt="" decoding="async" referrerpolicy="no-referrer">
+        <span class="job-kind"></span>
+      </div>
+      <div class="job-body">
+        <div class="job-top">
+          <div class="job-titles">
+            <p class="job-title"></p>
+            <p class="job-label"></p>
+          </div>
+          <div class="job-actions">
+            <a class="btn btn-success btn-sm job-save" hidden download>
+              <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19.5h14"/></svg>
+              <span>Download File</span>
+            </a>
+            <button type="button" class="btn btn-secondary btn-sm job-retry" hidden>Retry</button>
+            <button type="button" class="btn btn-ghost btn-sm job-cancel">Cancel</button>
+            <button type="button" class="icon-btn icon-btn-sm job-dismiss" aria-label="Remove from list" title="Remove from list" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="job-status-row">
+          <span class="job-stage"><span class="job-dot" aria-hidden="true"></span><span class="job-stage-text"></span></span>
+          <span class="job-percent"></span>
+        </div>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="job-stats"></div>
+        <ol class="job-steps" aria-label="Steps"></ol>
+        <div class="job-error" hidden>
+          <p><strong class="job-error-title"></strong> <span class="job-error-message"></span></p>
+          <details hidden><summary>Technical details</summary><code></code></details>
+        </div>
+      </div>
+    </li>
+  </template>
+</body>
+</html>

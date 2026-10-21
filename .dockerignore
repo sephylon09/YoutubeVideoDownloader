@@ -1,0 +1,47 @@
+# Only the app itself goes into the image: no local data, secrets, tools or Windows scripts.
+# Patterns match from the project root; "**/" makes them match in every folder.
+
+# Version control and CI
+.git
+.github
+.gitignore
+.dockerignore
+
+# Python environments and caches
+.venv
+venv
+env
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.cache
+
+# Local data: downloaded files, logs, portable tools
+downloads
+logs
+tools
+**/*.mp4
+**/*.mp3
+**/*.webm
+**/*.m4a
+**/*.part
+
+# Secrets and local configuration
+**/.env
+**/.env.*
+**/*.cookies
+**/cookies*.txt
+**/*.pem
+**/*.key
+.vscode
+.idea
+.claude
+
+# Not needed at runtime
+tests
+pytest.ini
+requirements-dev.txt
+*.bat
+*.md
+Dockerfile
+render.yaml

@@ -1,0 +1,15 @@
+# Runtime dependencies for Media Downloader.
+# start.bat installs these automatically into .venv; update yt-dlp with update.bat.
+# The Dockerfile installs the same list (rebuilding the image picks up new yt-dlp releases).
+
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+jinja2>=3.1,<4
+
+# yt-dlp with its default extras, which include the matching yt-dlp-ejs
+# (YouTube JavaScript challenge solver scripts).
+yt-dlp[default]>=2026.8.19
+
+# Official Deno JavaScript runtime used by yt-dlp-ejs (same as yt-dlp's "deno" extra).
+# Only listed for platforms that have a prebuilt wheel; elsewhere install Deno manually.
+deno>=2.6.6; (sys_platform == "win32" and platform_machine == "AMD64") or sys_platform == "darwin" or (sys_platform == "linux" and (platform_machine == "x86_64" or platform_machine == "aarch64"))

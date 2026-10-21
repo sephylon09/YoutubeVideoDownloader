@@ -1,0 +1,58 @@
+# Runs the test-suite on Linux and checks that the Docker image builds and serves requests.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Install Python packages
+        run: pip install -r requirements-dev.txt
+      - name: Run tests (offline; YouTube is mocked)
+        run: python -m pytest
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t media-downloader .
+      - name: Start a container the way Render does (PORT set by the platform)
+        run: docker run -d --name md -p 8000:10000 -e PORT=10000 -e MD_PASSWORD=ci-password-1234 media-downloader
+      - name: Smoke test
+        run: |
+          set -eu
+          for _ in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/healthz && break || sleep 2; done
+          echo
+          curl -fsS http://127.0.0.1:8000/healthz | grep -q '"status":"ok"'
+          # Signed out: the page redirects to the sign-in page and the API refuses.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/)" = 303
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8000/api/health)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -d password=wrong http://127.0.0.1:8000/login)" = 401
+          # Signed in: the page loads and FFmpeg, ffprobe and Deno are detected inside the container.
+          test "$(curl -s -c jar -o /dev/null -w '%{http_code}' -d password=ci-password-1234 http://127.0.0.1:8000/login)" = 303
+          curl -fsS -b jar http://127.0.0.1:8000/ | grep -q 'data-mode="public"'
+          curl -fsS -b jar http://127.0.0.1:8000/api/health | python3 -c '
+          import json, sys
+          tools = json.load(sys.stdin)["tools"]
+          print(json.dumps({k: tools[k] for k in ("ffmpeg", "ffprobe", "js_runtime", "yt_dlp_version", "yt_dlp_ejs_version")}, indent=2))
+          assert tools["ffmpeg"]["available"] and tools["ffprobe"]["available"], "FFmpeg missing"
+          assert tools["can_encode_mp3"], "MP3 encoder missing"
+          assert tools["js_runtime"]["available"] and tools["js_runtime"]["name"] == "deno", "Deno missing"
+          assert tools["yt_dlp_ejs_version"], "yt-dlp-ejs missing"
+          '
+      - name: Container log
+        if: always()
+        run: docker logs md || true
